@@ -58,7 +58,7 @@ final class LibtessSPMTests: XCTestCase {
         vertices.append(Vertex(x: 0.0, y: 10.0))
         vertices.append(Vertex(x: 10.0, y: 10.0))
         vertices.append(Vertex(x: 0.0, y: 10.0))
-        vertices.append(Vertex(x: 0.0, y: 0.0))
+        //vertices.append(Vertex(x: 0.0, y: 0.0))
         
         tess.addContour(size: 2, vertices: vertices, stride: MemoryLayout<Vertex>.size, count: vertices.count)
         

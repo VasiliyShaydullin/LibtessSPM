@@ -1,5 +1,8 @@
 
 import CLibtess2
+import simd
+
+public typealias Vector = simd_float3
 
 public enum TessOption: Int {
     case constrainedDelanayTriangulation
@@ -57,11 +60,11 @@ public class LibtessSPM {
         tessSetOption(tess, Int32(optin.rawValue), Int32(value))
     }
     
-    open func addContour(size: Int, vertices: UnsafeRawPointer, stride: Int, count: Int) { //MemoryLayout<CVector3>.size
+    open func addContour(size: Int, vertices: UnsafeRawPointer, stride: Int, count: Int) { //MemoryLayout<Vector>.size
         tessAddContour(tess, CInt(size), vertices, CInt(stride), CInt(count))
     }
     
-    open func tesselate(windingRule: WindingRule, elementType: ElementType, polySize: Int, vertexSize: VertexSize)-> (vertices: [TESSreal], indices: [Int])? {
+    open func tesselate(windingRule: WindingRule, elementType: ElementType, polySize: Int, vertexSize: VertexSize)-> (vertices: [Vector], indices: [Int])? {
         
         if tessTesselate(tess, CInt(windingRule.rawValue), CInt(elementType.rawValue), CInt(polySize), CInt(vertexSize.rawValue), nil) == 0 {
             print("Error")
@@ -77,8 +80,8 @@ public class LibtessSPM {
         let elementCount = Int(tess.pointee.elementCount)
         let stride = vertexSize.rawValue
         
-        var output: [TESSreal] = Array(repeating: 0, count: vertexCount * stride)
-        output.withUnsafeMutableBufferPointer { (body) -> Void in
+        var verts: [TESSreal] = Array(repeating: 0, count: vertexCount * stride)
+        verts.withUnsafeMutableBufferPointer { (body) -> Void in
             body.baseAddress?.assign(from: vertices, count: vertexCount * stride)
         }
         
@@ -97,6 +100,23 @@ public class LibtessSPM {
 //
 //        elements = indicesOut
         
+        //return (verts, indicesOut)
+        
+        var output: [Vector] = []
+        output.reserveCapacity(vertexCount)
+        
+        //let stride: Int = vertexSize.rawValue
+        for i in 0..<vertexCount {
+            let x = verts[i * stride]
+            let y = verts[i * stride + 1]
+            let z = vertexSize == .size3 ? verts[i * stride + 2] : 0
+            
+            output.append(Vector(x: x, y: y, z: z))
+            
+        }
+        
+        //vertices = output
+        
         return (output, indicesOut)
         
     }
@@ -104,3 +124,4 @@ public class LibtessSPM {
     
     
 }
+
