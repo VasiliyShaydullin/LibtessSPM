@@ -64,7 +64,7 @@ final class LibtessSPMTests: XCTestCase {
         
         let polygonIndexCount = 3; // triangles only
         let result = tess.tesselate(windingRule: .odd, elementType: .polygons, polySize: polygonIndexCount, vertexSize: .size2)
-        print("result = ", result?.vertices.count, result?.indices.count)
+        print("result = ", result?.vertices.count ?? "nil", result?.indices.count ?? "nil")
         XCTAssert(result != nil, "Result tesselate = nil")
         
     }
