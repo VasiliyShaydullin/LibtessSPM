@@ -28,14 +28,6 @@ public enum VertexSize: Int {
     case size3 = 3
 }
 
-public enum TessError: Error {
-    /// Error when a tessTesselate() call fails.
-    case tesselationFailed
-    /// Error thrown by TessC.tesselate static method when TessC initialization
-    /// failed.
-    case tessCInitFailed
-}
-
 public class LibtessSPM {
     
     var tess: UnsafeMutablePointer<TESStesselator>
@@ -60,68 +52,68 @@ public class LibtessSPM {
         tessSetOption(tess, Int32(optin.rawValue), Int32(value))
     }
     
-    open func addContour(size: Int, vertices: UnsafeRawPointer, stride: Int, count: Int) { //MemoryLayout<Vector>.size
+    // addContour() - Adds a contour to be tesselated.
+    // The type of the vertex coordinates is assumed to be TESSreal.
+    // Parameters:
+    //   size - number of coordinates per vertex. Must be 2 or 3.
+    //   pointer - pointer to the first coordinate of the first vertex in the array.
+    //   stride - defines offset in bytes between consecutive vertices.
+    //   count - number of vertices in contour.
+    open func addContour(size: Int, vertices: UnsafeRawPointer, stride: Int, count: Int) {
         tessAddContour(tess, CInt(size), vertices, CInt(stride), CInt(count))
     }
     
-    open func tesselate(windingRule: WindingRule, elementType: ElementType, polySize: Int, vertexSize: VertexSize)-> (vertices: [Vector], indices: [Int])? {
+    // tesselate() - tesselate contours.
+    // Parameters:
+    //   windingRule - winding rules used for tesselation, must be one of TessWindingRule.
+    //   elementType - defines the tesselation result element type, must be one of TessElementType.
+    //   polySize - defines maximum vertices per polygons if output is polygons.
+    //   vertexSize - defines the number of coordinates in tesselation result vertex, must be 2 or 3.
+    // Returns:
+    // vertices and indices
+    open func tesselate(windingRule: WindingRule, elementType: ElementType, polySize: Int, vertexSize: VertexSize) -> (vertices: [Vector], indices: [Int])? {
         
         if tessTesselate(tess, CInt(windingRule.rawValue), CInt(elementType.rawValue), CInt(polySize), CInt(vertexSize.rawValue), nil) == 0 {
-            print("Error")
+            print("Failed to tesselate contours")
             return nil
         }
         
         tessGetElements(tess)
-        guard let vertices = tess.pointee.vertices, let elements = tess.pointee.elements else {
-            print("Error")
+        guard let vertices = tessGetVertices(tess), let elements = tessGetElements(tess) else {
+            print("failed return vertices and elements")
             return nil
         }
-        let vertexCount = Int(tess.pointee.vertexCount)
-        let elementCount = Int(tess.pointee.elementCount)
+        let vertexCount = Int(tessGetVertexCount(tess))
+        let elementCount = Int(tessGetElementCount(tess))
         let stride = vertexSize.rawValue
         
-        var verts: [TESSreal] = Array(repeating: 0, count: vertexCount * stride)
-        verts.withUnsafeMutableBufferPointer { (body) -> Void in
-            body.baseAddress?.assign(from: vertices, count: vertexCount * stride)
-        }
-        
-        var indicesOut: [Int] = []
+        var indices: [Int] = []
         
         for i in 0..<elementCount {
             let p = elements.advanced(by: i * polySize)
             for j in 0..<polySize where p[j] != ~TESSindex() {
-                indicesOut.append(Int(p[j]))
+                indices.append(Int(p[j]))
             }
         }
         
-//        verticesRaw = output
-//        vertexCount = nverts
-//        elementCount = nelems
-//
-//        elements = indicesOut
+        var vertexArray: [TESSreal] = Array(repeating: 0, count: vertexCount * stride)
+        vertexArray.withUnsafeMutableBufferPointer { (body) -> Void in
+            body.baseAddress?.assign(from: vertices, count: vertexCount * stride)
+        }
         
-        //return (verts, indicesOut)
+        var vectors: [Vector] = []
+        vectors.reserveCapacity(vertexCount)
         
-        var output: [Vector] = []
-        output.reserveCapacity(vertexCount)
-        
-        //let stride: Int = vertexSize.rawValue
         for i in 0..<vertexCount {
-            let x = verts[i * stride]
-            let y = verts[i * stride + 1]
-            let z = vertexSize == .size3 ? verts[i * stride + 2] : 0
+            let x = vertexArray[i * stride]
+            let y = vertexArray[i * stride + 1]
+            let z = vertexSize == .size3 ? vertexArray[i * stride + 2] : 0
             
-            output.append(Vector(x: x, y: y, z: z))
+            vectors.append(Vector(x: x, y: y, z: z))
             
         }
         
-        //vertices = output
-        
-        return (output, indicesOut)
-        
+        return (vectors, indices)
     }
-    
-    
-    
 }
 
