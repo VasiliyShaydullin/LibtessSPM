@@ -20,7 +20,7 @@ guard let (verticesTess, indicesTess) = result else { return }
 
 ## Installation
 
-LibTessSwift is available as a [Swift Package Manager](https://swift.org/package-manager/):
+LibtessSPM is available as a [Swift Package Manager](https://swift.org/package-manager/):
 
 ```ruby
 .package(url: "https://github.com/VasiliyShaydullin/LibtessSPM.git", .exact("1.0.5"))
